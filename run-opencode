@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+SCRIPT_DIR = Path(__file__).parent
+
+home_path = SCRIPT_DIR / "data" / "home"
+config_path = SCRIPT_DIR / "config"
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run OpenCode in Docker with project and config mounted"
+    )
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="Force rebuild of docker image"
+    )
+    parser.add_argument(
+        "project_dir",
+        help="Project directory to mount and work in"
+    )
+    parser.add_argument(
+        "--ai-config",
+        default=Path("~/projects/ai-config"),
+        help="Path to ai-config repo (default: ~/projects/ai-config)"
+    )
+
+    args = parser.parse_args()
+
+    project_dir = Path(args.project_dir).expanduser().resolve()
+    ai_config_dir = Path(args.ai_config).expanduser().resolve()
+
+    if not project_dir.is_dir():
+        print(f"Project directory does not exist: {project_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    if not ai_config_dir.is_dir():
+        print(f"Config directory does not exist: {ai_config_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    if not home_path.is_dir():
+        print(f"Creating home directory: {home_path}")
+        home_path.mkdir(parents=True)
+
+    docker_run_cmd = [
+        "docker", "run",
+        "--rm",
+        "--init",
+        "-it",
+        "-v", f"{home_path}:/home/opencode:rw",
+        "-v", f"{config_path}:/config:rw",
+        "-v", f"{project_dir}:/workspace/{project_dir.name}",
+        "-w", f"/workspace/{project_dir.name}",
+        "-e", "HOME=/home/opencode",
+        "-e", "OPENCODE_CONFIG_DIR=/config",
+    ]
+
+    api_key = os.getenv("OPENCODE_API_KEY")
+    if api_key:
+        docker_run_cmd.extend(["-e", f"OPENCODE_API_KEY={api_key}"])
+
+    docker_run_cmd.append("opencode-custom:latest")
+
+    should_build = args.rebuild
+    if not should_build:
+        result = subprocess.run(
+            ["docker", "image", "inspect", "opencode-custom:latest"],
+            capture_output=True
+        )
+        should_build = result.returncode != 0
+
+    if should_build:
+        try:
+            result = subprocess.run(
+                ["docker", "build", "-t", "opencode-custom:latest", f"{SCRIPT_DIR}"]
+            )
+            if result.returncode != 0:
+                print("Docker build failed", file=sys.stderr)
+                sys.exit(1)
+        except Exception as e:
+            print(f"Error while building image: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    try:
+        subprocess.run(docker_run_cmd)
+    except Exception as e:
+        print(f"Error while running image: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
