@@ -60,6 +60,7 @@ def main():
         "-w", f"/workspace/{project_dir.name}",
         "-e", "HOME=/home/opencode",
         "-e", "OPENCODE_CONFIG_DIR=/config",
+        "-e", "PATH=/home/opencode/.local/share/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     ]
 
     api_key = os.getenv("OPENCODE_API_KEY")
