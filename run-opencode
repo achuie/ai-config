@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 
-SCRIPT_DIR = Path(__file__).parent
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 home_path = SCRIPT_DIR / "data" / "home"
 config_path = SCRIPT_DIR / "config"
@@ -80,7 +80,7 @@ def main():
     if should_build:
         try:
             result = subprocess.run(
-                ["docker", "build", "-t", "opencode-custom:latest", f"{SCRIPT_DIR}"]
+                ["docker", "build", "-t", "opencode-custom:latest", f"{SCRIPT_DIR}/"]
             )
             if result.returncode != 0:
                 print("Docker build failed", file=sys.stderr)
