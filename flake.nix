@@ -49,7 +49,9 @@
               --ro-bind /nix/store /nix/store \
               --ro-bind /etc/resolv.conf /etc/resolv.conf \
               --ro-bind-try /etc/ssl/certs /etc/ssl/certs \
-              --tmpfs /tmp \
+              --tmpfs /tmp
+              --setenv TMPDIR /tmp
+              --dev-bind /dev/shm /dev/shm
               --bind "$HOME" "$HOME" \
               --bind "$(pwd -P)" /workspace \
               --chdir /workspace \
