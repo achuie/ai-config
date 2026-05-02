@@ -51,7 +51,8 @@
               --ro-bind-try /etc/ssl/certs /etc/ssl/certs \
               --tmpfs /tmp \
               --bind "$HOME" "$HOME" \
-              --chdir "$(pwd)" \
+              --bind "$CWD" /workspace \
+              --chdir /workspace \
               --setenv HOME "$HOME" \
               --setenv PATH "${pkgs.lib.makeBinPath (
                 [ pkgs.opencode pkgs.git pkgs.curl pkgs.jq ]
