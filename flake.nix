@@ -24,7 +24,7 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
-          opencodeWrapped = pkgs.writeShellScriptBin "opencode" ''
+          opencodeWrapped = pkgs.writeShellScriptBin "opencode-wrapped" ''
             set -euo pipefail
 
             if [ -z "''${AI_CONFIG_DIR:-}" ]; then
@@ -45,47 +45,39 @@
               exec ${pkgs.bash}/bin/bash --noprofile --norc "$@"
             fi
 
-            exec env -i \
-              HOME="$HOME" \
-              TERM="$TERM" \
-              PATH="${pkgs.lib.makeBinPath (
-                  [
-                    pkgs.opencode
-                    pkgs.git
-                    pkgs.curl
-                    pkgs.jq
-                    pkgs.coreutils
-                    pkgs.findutils
-                    pkgs.gnugrep
-                    pkgs.gnused
-                  ]
-                  ++ extraPackages pkgs
-                )}" \
-              ${pkgs.bubblewrap}/bin/bwrap \
-                --clearenv \
-                --unshare-all \
-                --share-net \
-                --die-with-parent \
-                --proc /proc \
-                --dev /dev \
-                --ro-bind /nix/store /nix/store \
-                --ro-bind /etc/resolv.conf /etc/resolv.conf \
-                --ro-bind-try /etc/ssl/certs /etc/ssl/certs \
-                --tmpfs /tmp \
-                --setenv TMPDIR /tmp \
-                --dev-bind /dev/shm /dev/shm \
-                --bind "$HOME" "$HOME" \
-                --bind "$(pwd -P)" /workspace \
-                --chdir /workspace \
-                --setenv HOME "$HOME" \
-                --setenv XDG_CONFIG_HOME "$HOME/.config" \
-                --setenv XDG_DATA_HOME "$HOME/.local/share" \
-                --setenv XDG_STATE_HOME "$HOME/.local/state" \
-                --setenv XDG_CACHE_HOME "$HOME/.cache" \
-                --setenv LANG "''${LANG:-C.UTF-8}" \
-                --setenv TERM "$TERM" \
-                --setenv PATH "$PATH" \
-                ${pkgs.opencode}/bin/opencode "$@"
+            exec ${pkgs.bubblewrap}/bin/bwrap \
+              --unshare-all \
+              --share-net \
+              --die-with-parent \
+              --proc /proc \
+              --dev /dev \
+              --ro-bind /nix/store /nix/store \
+              --ro-bind /etc/resolv.conf /etc/resolv.conf \
+              --ro-bind-try /etc/ssl/certs /etc/ssl/certs \
+              --tmpfs /tmp \
+              --setenv TMPDIR /tmp \
+              --dev-bind /dev/shm /dev/shm \
+              --bind "$HOME" "$HOME" \
+              --bind "$(pwd -P)" /workspace \
+              --bind "$AI_CONFIG_DIR/home/.config" /home/achuie/.config \
+              --bind "$AI_CONFIG_DIR/home/.local/share" /home/achuie/.local/share \
+              --chdir /workspace \
+              --setenv HOME "$HOME" \
+              --setenv OPENCODE_CONFIG_DIR "$HOME/.config/opencode" \
+              --setenv PATH "${pkgs.lib.makeBinPath (
+                [
+                  pkgs.opencode
+                  pkgs.git
+                  pkgs.curl
+                  pkgs.jq
+                  pkgs.coreutils
+                  pkgs.findutils
+                  pkgs.gnugrep
+                  pkgs.gnused
+                ]
+                ++ extraPackages pkgs
+              )}" \
+              ${pkgs.opencode}/bin/opencode "$@"
           '';
 
         in pkgs.mkShell {
