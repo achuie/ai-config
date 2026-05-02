@@ -78,7 +78,7 @@
                 ]
                 ++ extraPackages pkgs
               )}" \
-              "$CMD" "$@"
+              $CMD "$@"
           '';
 
         in pkgs.mkShell {
