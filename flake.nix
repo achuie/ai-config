@@ -40,6 +40,11 @@
               "$HOME/.local/share/opencode" \
               "$HOME/.cache/opencode"
 
+            if [ "''${1:-}" = "--shell" ]; then
+              shift
+              exec ${pkgs.bash}/bin/bash "$@"
+            fi
+
             exec ${pkgs.bubblewrap}/bin/bwrap \
               --unshare-all \
               --share-net \
