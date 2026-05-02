@@ -40,9 +40,10 @@
               "$HOME/.local/share/opencode" \
               "$HOME/.cache/opencode"
 
+            CMD="${pkgs.opencode}/bin/opencode"
             if [ "''${1:-}" = "--shell" ]; then
               shift
-              exec ${pkgs.bash}/bin/bash --noprofile --norc "$@"
+              CMD="${pkgs.bash}/bin/bash --noprofile --norc"
             fi
 
             exec ${pkgs.bubblewrap}/bin/bwrap \
@@ -77,7 +78,7 @@
                 ]
                 ++ extraPackages pkgs
               )}" \
-              ${pkgs.opencode}/bin/opencode "$@"
+              "$CMD" "$@"
           '';
 
         in pkgs.mkShell {
