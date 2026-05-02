@@ -46,6 +46,7 @@
             fi
 
             exec ${pkgs.bubblewrap}/bin/bwrap \
+              --clearenv \
               --unshare-all \
               --share-net \
               --die-with-parent \
@@ -65,6 +66,8 @@
               --setenv XDG_DATA_HOME "$HOME/.local/share" \
               --setenv XDG_STATE_HOME "$HOME/.local/state" \
               --setenv XDG_CACHE_HOME "$HOME/.cache" \
+              --setenv LANG "''${LANG:-C.UTF-8}" \
+              --setenv TERM "$TERM" \
               --setenv PATH "${pkgs.lib.makeBinPath (
                 [ pkgs.opencode pkgs.git pkgs.curl pkgs.jq ]
                 ++ extraPackages pkgs
