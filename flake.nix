@@ -51,7 +51,7 @@
               --ro-bind-try /etc/ssl/certs /etc/ssl/certs \
               --tmpfs /tmp \
               --bind "$HOME" "$HOME" \
-              --bind "$CWD" /workspace \
+              --bind "$(pwd -P)" /workspace \
               --chdir /workspace \
               --setenv HOME "$HOME" \
               --setenv PATH "${pkgs.lib.makeBinPath (
