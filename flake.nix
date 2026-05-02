@@ -61,6 +61,10 @@
               --bind "$(pwd -P)" /workspace \
               --chdir /workspace \
               --setenv HOME "$HOME" \
+              --setenv XDG_CONFIG_HOME "$HOME/.config" \
+              --setenv XDG_DATA_HOME "$HOME/.local/share" \
+              --setenv XDG_STATE_HOME "$HOME/.local/state" \
+              --setenv XDG_CACHE_HOME "$HOME/.cache" \
               --setenv PATH "${pkgs.lib.makeBinPath (
                 [ pkgs.opencode pkgs.git pkgs.curl pkgs.jq ]
                 ++ extraPackages pkgs
