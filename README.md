@@ -1,7 +1,7 @@
 # ai-config
 
 Persistent [opencode](https://opencode.ai) configuration, auth, and chat history as a Nix flake.
-Built on [agent-sandbox.nix](https://github.com/archie-judd/agent-sandbox.nix) for bubblewrap sandboxing on Linux and Seatbelt on macOS.
+Built on bubblewrap for sandboxing on Linux.
 
 All session history, model preferences, cached packages, and API auth live in `data/` (gitignored),
 and are shared across every project that imports this flake.
@@ -10,13 +10,14 @@ and are shared across every project that imports this flake.
 
 ```
 ai-config/
-├── flake.nix              # The flake — exposes lib.mkOpenCodeShell
+├── flake.nix              # The flake (exposes lib.mkOpenCodeShell)
 ├── config/
 │   └── opencode.jsonc     # opencode configuration (OPENCODE_CONFIG_DIR)
-├── auth.json              # API key for the opencode provider
-└── data/                  # Gitignored — persistent state
+│   └── skills/
+└── data/                  # Persistent state (gitignored)
     └── home/
         ├── .local/share/opencode/   # Sessions, SQLite DB, auth
+        │   └── auth.json
         ├── .local/state/opencode/   # Model prefs, prompt history
         ├── .cache/opencode/         # Cached model list, packages
         └── .config/opencode/        # Plugin node_modules
