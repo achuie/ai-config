@@ -57,7 +57,7 @@ export OPENCODE_API_KEY=your-key-here
 ```sh
 cd ~/projects/ai-config
 nix develop
-opencode
+opencode-wrapped
 ```
 
 ## Using in a project flake
@@ -103,7 +103,7 @@ Then in your project:
 
 ```sh
 nix develop
-opencode
+opencode-wrapped
 ```
 
 opencode will have access to your full chat history, API auth, model preferences,
