@@ -12,7 +12,7 @@ and are shared across every project that imports this flake.
 ai-config/
 ├── flake.nix              # The flake (exposes lib.mkOpenCodeShell)
 ├── config/
-│   └── opencode.jsonc     # opencode configuration (OPENCODE_CONFIG_DIR)
+│   ├── opencode.jsonc     # opencode configuration (OPENCODE_CONFIG_DIR)
 │   └── skills/
 └── data/                  # Persistent state (gitignored)
     └── home/
@@ -33,16 +33,17 @@ git clone git@github.com:achuie/ai-config.git ~/projects/ai-config
 
 ### 2. Export `AI_CONFIG_DIR`
 
+`AI_CONFIG_DIR` must point at the state root (`data/`), not the repository root.
 When using this flake directly (not via a project flake), set this before entering the shell:
 
 ```sh
-export AI_CONFIG_DIR=~/projects/ai-config
+export AI_CONFIG_DIR=~/projects/ai-config/data
 ```
 
 When using via a project flake, set it declaratively in that flake's `mkShell` instead
 (see [Using in a project flake](#using-in-a-project-flake)).
 
-The flake resolves all state directories and `OPENCODE_CONFIG_DIR` relative to this path at runtime.
+The flake resolves `HOME` and all XDG state directories relative to this path at runtime.
 
 ### 3. (Optional) Export `OPENCODE_API_KEY`
 
@@ -93,7 +94,7 @@ in the same shell so it is always available without any manual exports:
     in {
       devShells.x86_64-linux.default = pkgs.mkShell {
         inputsFrom = [ opencodeShell ];
-        env.AI_CONFIG_DIR = "/home/achuie/projects/ai-config";
+        env.AI_CONFIG_DIR = "/home/achuie/projects/ai-config/data";
       };
     };
 }
@@ -120,7 +121,7 @@ and any extra tools declared in `extraPackages`.
 
 | Variable          | Required | Description |
 |------------------|----------|-------------|
-| `AI_CONFIG_DIR`   | **yes**  | Absolute path to this repo |
+| `AI_CONFIG_DIR`   | **yes**  | Absolute path to the state root (`.../data`) |
 | `OPENCODE_API_KEY` | no      | API key — falls back to `auth.json` if unset |
 | `GIT_AUTHOR_NAME` / `GIT_AUTHOR_EMAIL` | no | Passed through to opencode for git identity |
 | `GIT_COMMITTER_NAME` / `GIT_COMMITTER_EMAIL` | no | Passed through to opencode for git identity |

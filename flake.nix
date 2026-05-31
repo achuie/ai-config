@@ -49,17 +49,31 @@
               exit 1
             fi
 
+            if ! CONFIG_ROOT="$(cd "$AI_CONFIG_DIR" 2>/dev/null && pwd -P)"; then
+              echo "AI_CONFIG_DIR does not exist: $AI_CONFIG_DIR" >&2
+              exit 1
+            fi
+
+            AI_CONFIG_DIR="$CONFIG_ROOT"
+            export AI_CONFIG_DIR
+
             # Capture real home before redirecting HOME (used on macOS).
             REAL_HOME="$HOME"
 
             HOME="$AI_CONFIG_DIR/home"
             export HOME
 
+            XDG_CONFIG_HOME="$HOME/.config"
+            XDG_DATA_HOME="$HOME/.local/share"
+            XDG_STATE_HOME="$HOME/.local/state"
+            XDG_CACHE_HOME="$HOME/.cache"
+            export XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME
+
             mkdir -p \
-              "$HOME/.config/opencode" \
-              "$HOME/.local/share/opencode" \
-              "$HOME/.local/state/opencode" \
-              "$HOME/.cache/opencode"
+              "$XDG_CONFIG_HOME/opencode" \
+              "$XDG_DATA_HOME/opencode" \
+              "$XDG_STATE_HOME/opencode" \
+              "$XDG_CACHE_HOME/opencode"
           '';
 
           # Shared --shell / CMD dispatch.
@@ -124,12 +138,25 @@
                     --bind-try /dev/shm /dev/shm \
                     --bind "$HOME" "$HOME" \
                     --bind "$(pwd -P)" /workspace \
+                    --dir /home \
+                    --dir "/home/$_USERNAME" \
+                    --dir "/home/$_USERNAME/.local" \
+                    --bind "$XDG_CONFIG_HOME" "/home/$_USERNAME/.config" \
+                    --bind "$XDG_DATA_HOME" "/home/$_USERNAME/.local/share" \
+                    --bind "$XDG_STATE_HOME" "/home/$_USERNAME/.local/state" \
+                    --bind "$XDG_CACHE_HOME" "/home/$_USERNAME/.cache" \
+                    --dir /bin \
                     --dir /usr/bin \
+                    --symlink ${pkgs.bash}/bin/bash /bin/sh \
                     --symlink ${pkgs.coreutils}/bin/env /usr/bin/env \
                     --chdir /workspace \
                     --setenv HOME "$HOME" \
                     --setenv USER "$_USERNAME" \
                     --setenv LOGNAME "$_USERNAME" \
+                    --setenv XDG_CONFIG_HOME "$XDG_CONFIG_HOME" \
+                    --setenv XDG_DATA_HOME "$XDG_DATA_HOME" \
+                    --setenv XDG_STATE_HOME "$XDG_STATE_HOME" \
+                    --setenv XDG_CACHE_HOME "$XDG_CACHE_HOME" \
                     --setenv OPENCODE_CONFIG_DIR "$HOME/.config/opencode" \
                     --setenv PATH "${binPath}" \
                     "''${CMD[@]}" "$@" \
