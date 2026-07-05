@@ -38,6 +38,12 @@ cd ~/projects/my-project
 opencode-wrapped
 ```
 
+To inspect the resolved state and workspace paths without launching opencode:
+
+```sh
+opencode-wrapped --where
+```
+
 The current directory is mounted read/write as `/workspace` inside the sandbox,
 and opencode starts there. Nix is available in the sandbox by default, so the
 model can use commands such as `nix shell`, `nix run`, and `nix develop` to add

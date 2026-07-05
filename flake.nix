@@ -74,6 +74,9 @@
             XDG_CACHE_HOME="$HOME/.cache"
             export XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME
 
+            OPENCODE_CONFIG_DIR="$HOME/.config/opencode"
+            export OPENCODE_CONFIG_DIR
+
             mkdir -p \
               "$XDG_CONFIG_HOME/opencode" \
               "$XDG_DATA_HOME/opencode" \
@@ -84,6 +87,23 @@
             NIX_SSL_CERT_FILE="''${NIX_SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}"
             SSL_CERT_FILE="''${SSL_CERT_FILE:-$NIX_SSL_CERT_FILE}"
             export NIX_CONFIG NIX_SSL_CERT_FILE SSL_CERT_FILE
+
+            WORKSPACE_HOST="$(pwd -P)"
+
+            if [ "''${1:-}" = "--where" ]; then
+              printf '%s\n' \
+                "AI_CONFIG_DIR=$AI_CONFIG_DIR" \
+                "HOME=$HOME" \
+                "XDG_CONFIG_HOME=$XDG_CONFIG_HOME" \
+                "XDG_DATA_HOME=$XDG_DATA_HOME" \
+                "XDG_STATE_HOME=$XDG_STATE_HOME" \
+                "XDG_CACHE_HOME=$XDG_CACHE_HOME" \
+                "OPENCODE_CONFIG_DIR=$OPENCODE_CONFIG_DIR" \
+                "OPENCODE_DATA_DIR=$XDG_DATA_HOME/opencode" \
+                "WORKSPACE_HOST=$WORKSPACE_HOST" \
+                "WORKSPACE_SANDBOX=/workspace"
+              exit 0
+            fi
           '';
 
           # Shared --shell / CMD dispatch.
@@ -152,7 +172,7 @@
                     --setenv TMPDIR /tmp \
                     --bind-try /dev/shm /dev/shm \
                     --bind "$HOME" "$HOME" \
-                    --bind "$(pwd -P)" /workspace \
+                    --bind "$WORKSPACE_HOST" /workspace \
                     --dir /home \
                     --dir "/home/$_USERNAME" \
                     --dir "/home/$_USERNAME/.local" \
@@ -172,7 +192,7 @@
                     --setenv XDG_DATA_HOME "$XDG_DATA_HOME" \
                     --setenv XDG_STATE_HOME "$XDG_STATE_HOME" \
                     --setenv XDG_CACHE_HOME "$XDG_CACHE_HOME" \
-                    --setenv OPENCODE_CONFIG_DIR "$HOME/.config/opencode" \
+                    --setenv OPENCODE_CONFIG_DIR "$OPENCODE_CONFIG_DIR" \
                     --setenv NIX_CONFIG "$NIX_CONFIG" \
                     --setenv NIX_SSL_CERT_FILE "$NIX_SSL_CERT_FILE" \
                     --setenv SSL_CERT_FILE "$SSL_CERT_FILE" \
@@ -197,7 +217,6 @@
                 (commonPrologue + ''
                   # sandbox-exec inherits the parent environment (no --setenv needed).
                   export PATH="${binPath}"
-                  export OPENCODE_CONFIG_DIR="$HOME/.config/opencode"
                   export USER="$(id -un)"
                   export LOGNAME="$USER"
                   export TMPDIR="''${TMPDIR:-/tmp}"
@@ -206,7 +225,7 @@
                   exec /usr/bin/sandbox-exec \
                     -D REAL_HOME="$REAL_HOME" \
                     -D HOME_DIR="$HOME" \
-                    -D WORKSPACE="$(pwd -P)" \
+                    -D WORKSPACE="$WORKSPACE_HOST" \
                     -p '
                       (version 1)
                       (allow default)
