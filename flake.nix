@@ -17,7 +17,8 @@
       forAllSystems = nixpkgs.lib.genAttrs systems;
 
     in {
-      lib.mkOpenCodeShell =
+      lib = rec {
+        mkOpenCodePackage =
         { system
         , extraPackages ? (_: [])
         }:
@@ -34,20 +35,27 @@
               pkgs.findutils
               pkgs.gnugrep
               pkgs.gnused
+              pkgs.nix
             ]
             ++ extraPackages pkgs
           );
 
-          # Shared bash preamble: guard, HOME redirect, dir creation.
-          # REAL_HOME is captured here before the redirect for use by the
-          # macOS seatbelt wrapper; it is set but unused on Linux.
+          # Shared bash preamble: state root resolution, HOME redirect, dir creation.
           commonPrologue = ''
             set -euo pipefail
 
+            # Capture real home before redirecting HOME (used for defaults and on macOS).
+            REAL_HOME="$HOME"
+
             if [ -z "''${AI_CONFIG_DIR:-}" ]; then
-              echo "AI_CONFIG_DIR not set" >&2
-              exit 1
+              if [ -n "''${XDG_DATA_HOME:-}" ]; then
+                AI_CONFIG_DIR="$XDG_DATA_HOME/ai-config"
+              else
+                AI_CONFIG_DIR="$REAL_HOME/.local/share/ai-config"
+              fi
             fi
+
+            mkdir -p "$AI_CONFIG_DIR"
 
             if ! CONFIG_ROOT="$(cd "$AI_CONFIG_DIR" 2>/dev/null && pwd -P)"; then
               echo "AI_CONFIG_DIR does not exist: $AI_CONFIG_DIR" >&2
@@ -56,9 +64,6 @@
 
             AI_CONFIG_DIR="$CONFIG_ROOT"
             export AI_CONFIG_DIR
-
-            # Capture real home before redirecting HOME (used on macOS).
-            REAL_HOME="$HOME"
 
             HOME="$AI_CONFIG_DIR/home"
             export HOME
@@ -74,6 +79,11 @@
               "$XDG_DATA_HOME/opencode" \
               "$XDG_STATE_HOME/opencode" \
               "$XDG_CACHE_HOME/opencode"
+
+            NIX_CONFIG="''${NIX_CONFIG:-experimental-features = nix-command flakes}"
+            NIX_SSL_CERT_FILE="''${NIX_SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}"
+            SSL_CERT_FILE="''${SSL_CERT_FILE:-$NIX_SSL_CERT_FILE}"
+            export NIX_CONFIG NIX_SSL_CERT_FILE SSL_CERT_FILE
           '';
 
           # Shared --shell / CMD dispatch.
@@ -126,6 +136,11 @@
                     --proc /proc \
                     --dev /dev \
                     --ro-bind /nix/store /nix/store \
+                    --dir /nix/var \
+                    --dir /nix/var/nix \
+                    --ro-bind-try /etc/nix /etc/nix \
+                    --bind-try /nix/var/nix/daemon-socket /nix/var/nix/daemon-socket \
+                    --ro-bind-try /nix/var/nix/profiles /nix/var/nix/profiles \
                     --ro-bind /etc/resolv.conf /etc/resolv.conf \
                     --ro-bind /etc/hosts /etc/hosts \
                     --ro-bind-try /etc/ssl/certs /etc/ssl/certs \
@@ -158,6 +173,9 @@
                     --setenv XDG_STATE_HOME "$XDG_STATE_HOME" \
                     --setenv XDG_CACHE_HOME "$XDG_CACHE_HOME" \
                     --setenv OPENCODE_CONFIG_DIR "$HOME/.config/opencode" \
+                    --setenv NIX_CONFIG "$NIX_CONFIG" \
+                    --setenv NIX_SSL_CERT_FILE "$NIX_SSL_CERT_FILE" \
+                    --setenv SSL_CERT_FILE "$SSL_CERT_FILE" \
                     --setenv PATH "${binPath}" \
                     "''${CMD[@]}" "$@" \
                     3<<<"$_PASSWD" \
@@ -202,9 +220,31 @@
                     -- "''${CMD[@]}" "$@"
                 '');
 
+        in opencodeWrapped;
+
+        mkOpenCodeShell =
+        { system
+        , extraPackages ? (_: [])
+        }:
+        let
+          pkgs = import nixpkgs { inherit system; };
         in pkgs.mkShell {
-          packages = [ opencodeWrapped ];
+          packages = [ (mkOpenCodePackage { inherit system extraPackages; }) ];
         };
+      };
+
+      packages = forAllSystems (system: {
+        opencode-wrapped = self.lib.mkOpenCodePackage { inherit system; };
+        default = self.packages.${system}.opencode-wrapped;
+      });
+
+      apps = forAllSystems (system: {
+        opencode-wrapped = {
+          type = "app";
+          program = "${self.packages.${system}.opencode-wrapped}/bin/opencode-wrapped";
+        };
+        default = self.apps.${system}.opencode-wrapped;
+      });
 
       devShells = forAllSystems (system: {
         default = nixpkgs.legacyPackages.${system}.mkShell {
