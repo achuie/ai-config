@@ -155,7 +155,7 @@
                     --die-with-parent \
                     --proc /proc \
                     --dev /dev \
-                    --ro-bind /nix/store /nix/store \
+                    --bind /nix/store /nix/store \
                     --dir /nix/var \
                     --dir /nix/var/nix \
                     --ro-bind-try /etc/nix /etc/nix \
